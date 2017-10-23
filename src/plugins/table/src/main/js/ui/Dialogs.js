@@ -20,9 +20,10 @@ define(
   'tinymce.plugins.table.ui.Dialogs',
   [
     'tinymce.core.util.Tools',
-    'tinymce.core.Env'
+    'tinymce.core.Env',
+    'tinymce.plugins.table.actions.InsertTable'
   ],
-  function (Tools, Env) {
+  function (Tools, Env, InsertTable) {
     var each = Tools.each;
 
     return function (editor) {
@@ -214,7 +215,7 @@ define(
 
           editor.undoManager.transact(function () {
             if (!tableElm) {
-              tableElm = editor.plugins.table.insertTable(data.cols || 1, data.rows || 1);
+              tableElm = InsertTable.insert(editor, data.cols || 1, data.rows || 1);
             }
 
             editor.dom.setAttribs(tableElm, {
@@ -224,7 +225,7 @@ define(
 
             if (editor.settings.table_style_by_css) {
               stylesToMerge = [];
-              stylesToMerge.push({ name: 'border', value: data.border });
+              stylesToMerge.push({ name: 'border-width', value: addSizeSuffix(data.border) });
               stylesToMerge.push({ name: 'border-spacing', value: addSizeSuffix(data.cellspacing) });
               mergeStyles(dom, tableElm, stylesToMerge);
               dom.setAttribs(tableElm, {
@@ -234,8 +235,11 @@ define(
               });
               if (tableElm.children) {
                 for (var i = 0; i < tableElm.children.length; i++) {
-                  styleTDTH(tableElm.children[i], 'border', data.border);
-                  styleTDTH(tableElm.children[i], 'padding', addSizeSuffix(data.cellpadding));
+                  styleTDTH(tableElm.children[i], {
+                    'border-width': addSizeSuffix(data.border),
+                    'border-color': data.borderColor,
+                    'padding': addSizeSuffix(data.cellpadding)
+                  });
                 }
               }
             } else {
@@ -428,23 +432,6 @@ define(
             onsubmit: onSubmitTableForm
           });
         }
-      };
-
-      self.merge = function (grid, cell) {
-        editor.windowManager.open({
-          title: "Merge cells",
-          body: [
-            { label: 'Cols', name: 'cols', type: 'textbox', value: '1', size: 10 },
-            { label: 'Rows', name: 'rows', type: 'textbox', value: '1', size: 10 }
-          ],
-          onsubmit: function () {
-            var data = this.toJSON();
-
-            editor.undoManager.transact(function () {
-              grid.merge(cell, data.cols, data.rows);
-            });
-          }
-        });
       };
 
       self.cell = function () {

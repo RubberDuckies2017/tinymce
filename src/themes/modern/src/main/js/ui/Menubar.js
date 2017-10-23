@@ -11,34 +11,57 @@
 define(
   'tinymce.themes.modern.ui.Menubar',
   [
+    'ephox.katamari.api.Arr',
     'tinymce.core.util.Tools',
     'tinymce.themes.modern.api.Settings'
   ],
-  function (Tools, Settings) {
+  function (Arr, Tools, Settings) {
     var defaultMenus = {
-      file: { title: 'File', items: 'newdocument' },
+      file: { title: 'File', items: 'newdocument restoredraft | preview | print' },
       edit: { title: 'Edit', items: 'undo redo | cut copy paste pastetext | selectall' },
-      insert: { title: 'Insert', items: '|' },
-      view: { title: 'View', items: 'visualaid |' },
-      format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript | formats | removeformat' },
+      view: { title: 'View', items: 'code | visualaid visualchars visualblocks | spellchecker | preview fullscreen' },
+      insert: { title: 'Insert', items: 'image link media template codesample inserttable | charmap hr | pagebreak nonbreaking anchor toc | insertdatetime' },
+      format: { title: 'Format', items: 'bold italic underline strikethrough superscript subscript codeformat | blockformats align | removeformat' },
+      tools: { title: 'Tools', items: 'spellchecker spellcheckerlanguage | a11ycheck' },
       table: { title: 'Table' },
-      tools: { title: 'Tools' }
+      help: { title: 'Help' }
     };
 
-    var createMenuItem = function (menuItems, name) {
-      var menuItem;
+    var delimiterMenuNamePair = function () {
+      return { name: '|', item: { text: '|' } };
+    };
 
-      if (name === '|') {
-        return { text: '|' };
-      }
+    var createMenuNameItemPair = function (name, item) {
+      var menuItem = item ? { name: name, item: item } : null;
+      return name === '|' ? delimiterMenuNamePair() : menuItem;
+    };
 
-      menuItem = menuItems[name];
+    var hasItemName = function (namedMenuItems, name) {
+      return Arr.findIndex(namedMenuItems, function (namedMenuItem) {
+        return namedMenuItem.name === name;
+      }).isSome();
+    };
 
-      return menuItem;
+    var isSeparator = function (namedMenuItem) {
+      return namedMenuItem && namedMenuItem.item.text === '|';
+    };
+
+    var cleanupMenu = function (namedMenuItems, removedMenuItems) {
+      var menuItemsPass1 = Arr.filter(namedMenuItems, function (namedMenuItem) {
+        return removedMenuItems.hasOwnProperty(namedMenuItem.name) === false;
+      });
+
+      var menuItemsPass2 = Arr.filter(menuItemsPass1, function (namedMenuItem, i, namedMenuItems) {
+        return !isSeparator(namedMenuItem) || !isSeparator(namedMenuItems[i - 1]);
+      });
+
+      return Arr.filter(menuItemsPass2, function (namedMenuItem, i, namedMenuItems) {
+        return !isSeparator(namedMenuItem) || i > 0 && i < namedMenuItems.length - 1;
+      });
     };
 
     var createMenu = function (editorMenuItems, menus, removedMenuItems, context) {
-      var menuButton, menu, menuItems, isUserDefined;
+      var menuButton, menu, namedMenuItems, isUserDefined;
 
       // User defined menu
       if (menus) {
@@ -50,47 +73,41 @@ define(
 
       if (menu) {
         menuButton = { text: menu.title };
-        menuItems = [];
+        namedMenuItems = [];
 
         // Default/user defined items
-        Tools.each((menu.items || '').split(/[ ,]/), function (item) {
-          var menuItem = createMenuItem(editorMenuItems, item);
+        Tools.each((menu.items || '').split(/[ ,]/), function (name) {
+          var namedMenuItem = createMenuNameItemPair(name, editorMenuItems[name]);
 
-          if (menuItem && !removedMenuItems[item]) {
-            menuItems.push(createMenuItem(editorMenuItems, item));
+          if (namedMenuItem) {
+            namedMenuItems.push(namedMenuItem);
           }
         });
 
         // Added though context
         if (!isUserDefined) {
-          Tools.each(editorMenuItems, function (menuItem) {
-            if (menuItem.context === context) {
-              if (menuItem.separator === 'before') {
-                menuItems.push({ text: '|' });
+          Tools.each(editorMenuItems, function (item, name) {
+            if (item.context === context && !hasItemName(namedMenuItems, name)) {
+              if (item.separator === 'before') {
+                namedMenuItems.push(delimiterMenuNamePair());
               }
 
-              if (menuItem.prependToContext) {
-                menuItems.unshift(menuItem);
+              if (item.prependToContext) {
+                namedMenuItems.unshift(createMenuNameItemPair(name, item));
               } else {
-                menuItems.push(menuItem);
+                namedMenuItems.push(createMenuNameItemPair(name, item));
               }
 
-              if (menuItem.separator === 'after') {
-                menuItems.push({ text: '|' });
+              if (item.separator === 'after') {
+                namedMenuItems.push(delimiterMenuNamePair());
               }
             }
           });
         }
 
-        for (var i = 0; i < menuItems.length; i++) {
-          if (menuItems[i].text === '|') {
-            if (i === 0 || i === menuItems.length - 1) {
-              menuItems.splice(i, 1);
-            }
-          }
-        }
-
-        menuButton.menu = menuItems;
+        menuButton.menu = Arr.map(cleanupMenu(namedMenuItems, removedMenuItems), function (menuItem) {
+          return menuItem.item;
+        });
 
         if (!menuButton.menu.length) {
           return null;

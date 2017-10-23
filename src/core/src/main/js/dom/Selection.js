@@ -20,27 +20,26 @@
 define(
   'tinymce.core.dom.Selection',
   [
-    'ephox.katamari.api.Arr',
     'ephox.sugar.api.dom.Compare',
     'ephox.sugar.api.node.Element',
+    'tinymce.core.Env',
     'tinymce.core.caret.CaretPosition',
     'tinymce.core.dom.BookmarkManager',
     'tinymce.core.dom.ControlSelection',
-    'tinymce.core.dom.NodeType',
     'tinymce.core.dom.RangeUtils',
     'tinymce.core.dom.ScrollIntoView',
     'tinymce.core.dom.TreeWalker',
-    'tinymce.core.Env',
+    'tinymce.core.focus.EditorFocus',
     'tinymce.core.selection.EventProcessRanges',
-    'tinymce.core.selection.FragmentReader',
     'tinymce.core.selection.GetSelectionContent',
     'tinymce.core.selection.MultiRange',
+    'tinymce.core.selection.SelectionBookmark',
     'tinymce.core.selection.SetSelectionContent',
     'tinymce.core.util.Tools'
   ],
   function (
-    Arr, Compare, Element, CaretPosition, BookmarkManager, ControlSelection, NodeType, RangeUtils, ScrollIntoView, TreeWalker, Env, EventProcessRanges,
-    FragmentReader, GetSelectionContent, MultiRange, SetSelectionContent, Tools
+    Compare, Element, Env, CaretPosition, BookmarkManager, ControlSelection, RangeUtils, ScrollIntoView, TreeWalker, EditorFocus, EventProcessRanges, GetSelectionContent,
+    MultiRange, SelectionBookmark, SetSelectionContent, Tools
   ) {
     var each = Tools.each, trim = Tools.trim;
 
@@ -68,7 +67,7 @@ define(
      * @param {tinymce.Editor} editor Editor instance of the selection.
      * @param {tinymce.dom.Serializer} serializer DOM serialization class to use for getContent.
      */
-    function Selection(dom, win, serializer, editor) {
+    var Selection = function (dom, win, serializer, editor) {
       var self = this;
 
       self.dom = dom;
@@ -77,7 +76,7 @@ define(
       self.editor = editor;
       self.bookmarkManager = new BookmarkManager(self);
       self.controlSelection = new ControlSelection(self, editor);
-    }
+    };
 
     Selection.prototype = {
       /**
@@ -242,9 +241,6 @@ define(
       select: function (node, content) {
         var self = this, dom = self.dom, rng = dom.createRng(), idx;
 
-        // Clear stored range set by FocusManager
-        self.lastFocusBookmark = null;
-
         if (node) {
           if (!content && self.controlSelection.controlSelect(node)) {
             return;
@@ -324,7 +320,7 @@ define(
       getRng: function (w3c) {
         var self = this, selection, rng, elm, doc;
 
-        function tryCompareBoundaryPoints(how, sourceRange, destinationRange) {
+        var tryCompareBoundaryPoints = function (how, sourceRange, destinationRange) {
           try {
             return sourceRange.compareBoundaryPoints(how, destinationRange);
           } catch (ex) {
@@ -335,7 +331,7 @@ define(
             // For performance reasons just return -1
             return -1;
           }
-        }
+        };
 
         if (!self.win) {
           return null;
@@ -347,21 +343,12 @@ define(
           return null;
         }
 
-        // Use last rng passed from FocusManager if it's available this enables
-        // calls to editor.selection.getStart() to work when caret focus is lost on IE
-        if (!w3c && self.lastFocusBookmark) {
-          var bookmark = self.lastFocusBookmark;
+        if (self.editor.bookmark !== undefined && EditorFocus.hasFocus(self.editor) === false) {
+          var bookmark = SelectionBookmark.getRng(self.editor);
 
-          // Convert bookmark to range IE 11 fix
-          if (bookmark.startContainer) {
-            rng = doc.createRange();
-            rng.setStart(bookmark.startContainer, bookmark.startOffset);
-            rng.setEnd(bookmark.endContainer, bookmark.endOffset);
-          } else {
-            rng = bookmark;
+          if (bookmark.isSome()) {
+            return bookmark.getOr(doc.createRange());
           }
-
-          return rng;
         }
 
         try {
@@ -376,7 +363,7 @@ define(
           // IE throws unspecified error here if TinyMCE is placed in a frame/iframe
         }
 
-        rng = EventProcessRanges.processRanges(self.editor, [ rng ])[0];
+        rng = EventProcessRanges.processRanges(self.editor, [rng])[0];
 
         // No range found then create an empty one
         // This can occur when the editor is placed in a hidden container element on Gecko
@@ -518,7 +505,7 @@ define(
         var self = this, rng = self.getRng(), elm;
         var startContainer, endContainer, startOffset, endOffset, root = self.dom.getRoot();
 
-        function skipEmptyTextNodes(node, forwards) {
+        var skipEmptyTextNodes = function (node, forwards) {
           var orig = node;
 
           while (node && node.nodeType === 3 && node.length === 0) {
@@ -526,7 +513,7 @@ define(
           }
 
           return node || orig;
-        }
+        };
 
         // Range maybe lost after the editor is made visible again
         if (!rng) {
