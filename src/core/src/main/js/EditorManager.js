@@ -26,20 +26,23 @@ define(
     'global!document',
     'global!window',
     'tinymce.core.AddOnManager',
-    'tinymce.core.dom.DomQuery',
-    'tinymce.core.dom.DOMUtils',
     'tinymce.core.Editor',
     'tinymce.core.Env',
     'tinymce.core.ErrorReporter',
-    'tinymce.core.FocusManager',
     'tinymce.core.LegacyInput',
+    'tinymce.core.dom.DOMUtils',
+    'tinymce.core.dom.DomQuery',
+    'tinymce.core.focus.FocusController',
     'tinymce.core.util.I18n',
     'tinymce.core.util.Observable',
     'tinymce.core.util.Promise',
     'tinymce.core.util.Tools',
     'tinymce.core.util.URI'
   ],
-  function (Arr, Type, document, window, AddOnManager, DomQuery, DOMUtils, Editor, Env, ErrorReporter, FocusManager, LegacyInput, I18n, Observable, Promise, Tools, URI) {
+  function (
+    Arr, Type, document, window, AddOnManager, Editor, Env, ErrorReporter, LegacyInput, DOMUtils, DomQuery, FocusController, I18n, Observable, Promise, Tools,
+    URI
+  ) {
     var DOM = DOMUtils.DOM;
     var explode = Tools.explode, each = Tools.each, extend = Tools.extend;
     var instanceCounter = 0, beforeUnloadDelegate, EditorManager, boundGlobalEvents = false;
@@ -51,7 +54,7 @@ define(
       return id !== 'length';
     };
 
-    function globalEventDelegate(e) {
+    var globalEventDelegate = function (e) {
       each(EditorManager.get(), function (editor) {
         if (e.type === 'scroll') {
           editor.fire('ScrollWindow', e);
@@ -59,9 +62,9 @@ define(
           editor.fire('ResizeWindow', e);
         }
       });
-    }
+    };
 
-    function toggleGlobalEvents(state) {
+    var toggleGlobalEvents = function (state) {
       if (state !== boundGlobalEvents) {
         if (state) {
           DomQuery(window).on('resize scroll', globalEventDelegate);
@@ -71,9 +74,9 @@ define(
 
         boundGlobalEvents = state;
       }
-    }
+    };
 
-    function removeEditorFromList(targetEditor) {
+    var removeEditorFromList = function (targetEditor) {
       var oldEditors = editors;
 
       delete legacyEditors[targetEditor.id];
@@ -99,9 +102,9 @@ define(
       }
 
       return oldEditors.length !== editors.length;
-    }
+    };
 
-    function purgeDestroyedEditor(editor) {
+    var purgeDestroyedEditor = function (editor) {
       // User has manually destroyed the editor lets clean up the mess
       if (editor && editor.initialized && !(editor.getContainer() || editor.getBody()).parentNode) {
         removeEditorFromList(editor);
@@ -112,9 +115,11 @@ define(
       }
 
       return editor;
-    }
+    };
 
     EditorManager = {
+      defaultSettings: {},
+
       /**
        * Dom query instance.
        *
@@ -263,7 +268,7 @@ define(
          */
         self.suffix = suffix;
 
-        self.focusManager = new FocusManager(self);
+        FocusController.setup(self);
       },
 
       /**
@@ -322,11 +327,11 @@ define(
           ' '
         );
 
-        function isInvalidInlineTarget(settings, elm) {
+        var isInvalidInlineTarget = function (settings, elm) {
           return settings.inline && elm.tagName.toLowerCase() in invalidInlineTargets;
-        }
+        };
 
-        function createId(elm) {
+        var createId = function (elm) {
           var id = elm.id;
 
           // Use element id, or unique name or generate a unique id
@@ -344,9 +349,9 @@ define(
           }
 
           return id;
-        }
+        };
 
-        function execCallback(name) {
+        var execCallback = function (name) {
           var callback = settings[name];
 
           if (!callback) {
@@ -354,13 +359,13 @@ define(
           }
 
           return callback.apply(self, Array.prototype.slice.call(arguments, 2));
-        }
+        };
 
-        function hasClass(elm, className) {
+        var hasClass = function (elm, className) {
           return className.constructor === RegExp ? className.test(elm.className) : DOM.hasClass(elm, className);
-        }
+        };
 
-        function findTargets(settings) {
+        var findTargets = function (settings) {
           var l, targets = [];
 
           if (Env.ie && Env.ie < 11) {
@@ -424,16 +429,16 @@ define(
           }
 
           return targets;
-        }
+        };
 
         var provideResults = function (editors) {
           result = editors;
         };
 
-        function initEditors() {
+        var initEditors = function () {
           var initCount = 0, editors = [], targets;
 
-          function createEditor(id, settings, targetElm) {
+          var createEditor = function (id, settings, targetElm) {
             var editor = new Editor(id, settings, self);
 
             editors.push(editor);
@@ -446,7 +451,7 @@ define(
 
             editor.targetElm = editor.targetElm || targetElm;
             editor.render();
-          }
+          };
 
           DOM.unbind(window, 'ready', initEditors);
           execCallback('onpageload');
@@ -488,7 +493,7 @@ define(
               }
             });
           }
-        }
+        };
 
         self.settings = settings;
         DOM.bind(window, 'ready', initEditors);

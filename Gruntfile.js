@@ -210,10 +210,11 @@ module.exports = function (grunt) {
               "name": "tinymce",
               "version": packageData.version,
               "description": "Web based JavaScript HTML WYSIWYG editor control.",
+              "author": "Ephox Corporation",
               "main": "tinymce.js",
               "license": "LGPL-2.1",
               "keywords": ["editor", "wysiwyg", "tinymce", "richtext", "javascript", "html"],
-              "bugs": { "url": "http://www.tinymce.com/develop/bugtracker.php" }
+              "bugs": { "url": "https://github.com/tinymce/tinymce/issues" }
             }));
 
             zip.addData("composer.json", jsonToBuffer({
@@ -444,7 +445,7 @@ module.exports = function (grunt) {
       core: {
         config: 'config/bolt/browser.js',
         projectdir: '.',
-        testfiles: ["**/src/test/js/browser/**/*Test.js"],
+        testfiles: ["src/**/src/test/js/browser/**/*Test.js"],
         customRoutes: 'src/core/src/test/json/routes.json'
       }
     },
@@ -453,7 +454,7 @@ module.exports = function (grunt) {
       phantomjs: {
         browser: 'phantomjs',
         config: 'config/bolt/browser.js',
-        testfiles: ['**/src/test/js/**/*Test.js'],
+        testfiles: ['src/**/src/test/js/**/*Test.js'],
         overallTimeout: 600000,
         singleTimeout: 300000,
         customRoutes: 'src/core/src/test/json/routes.json',
@@ -463,7 +464,7 @@ module.exports = function (grunt) {
       chrome: {
         browser: 'chrome',
         config: 'config/bolt/browser.js',
-        testfiles: ['**/src/test/js/**/*Test.js'],
+        testfiles: ['src/**/src/test/js/**/*Test.js'],
         overallTimeout: 600000,
         singleTimeout: 300000,
         customRoutes: 'src/core/src/test/json/routes.json',
@@ -473,7 +474,7 @@ module.exports = function (grunt) {
       firefox: {
         browser: 'firefox',
         config: 'config/bolt/browser.js',
-        testfiles: ['**/src/test/js/**/*Test.js'],
+        testfiles: ['src/**/src/test/js/**/*Test.js'],
         overallTimeout: 600000,
         singleTimeout: 300000,
         customRoutes: 'src/core/src/test/json/routes.json',
@@ -483,7 +484,7 @@ module.exports = function (grunt) {
       MicrosoftEdge: {
         browser: 'MicrosoftEdge',
         config: 'config/bolt/browser.js',
-        testfiles: ['**/src/test/js/**/*Test.js'],
+        testfiles: ['src/**/src/test/js/**/*Test.js'],
         overallTimeout: 600000,
         singleTimeout: 300000,
         customRoutes: 'src/core/src/test/json/routes.json',
@@ -493,7 +494,7 @@ module.exports = function (grunt) {
       ie: {
         browser: 'ie',
         config: 'config/bolt/browser.js',
-        testfiles: ['**/src/test/js/**/*Test.js'],
+        testfiles: ['src/**/src/test/js/**/*Test.js'],
         overallTimeout: 600000,
         singleTimeout: 300000,
         customRoutes: 'src/core/src/test/json/routes.json',
@@ -550,6 +551,7 @@ module.exports = function (grunt) {
       'wordcount-plugin': { path: 'src/plugins/wordcount' },
       'inlite-theme': { path: 'src/themes/inlite' },
       'modern-theme': { path: 'src/themes/modern' },
+      'mobile-theme': { path: 'src/themes/mobile' },
       'lightgray-skin': { path: 'src/skins/lightgray' }
     },
 
@@ -606,7 +608,9 @@ module.exports = function (grunt) {
           {
             expand: true,
             cwd: 'src/themes',
-            src: ['*/dist/**'],
+            src: [
+              '*/dist/**'
+            ],
             dest: 'js/tinymce/themes/',
             filter: function (filePath) {
               return filePath.endsWith('dist') === false;
@@ -624,7 +628,10 @@ module.exports = function (grunt) {
           {
             expand: true,
             cwd: 'src/skins',
-            src: ['*/dist/**'],
+            src: [
+              '*/dist/**',
+              '!**/*.map'
+            ],
             dest: 'js/tinymce/skins/',
             filter: function (filePath) {
               return filePath.endsWith('dist') === false;

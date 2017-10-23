@@ -17,7 +17,6 @@ define(
     'tinymce.themes.modern.api.Events',
     'tinymce.themes.modern.api.Settings',
     'tinymce.themes.modern.ui.A11y',
-    'tinymce.themes.modern.ui.Branding',
     'tinymce.themes.modern.ui.ContextToolbars',
     'tinymce.themes.modern.ui.Menubar',
     'tinymce.themes.modern.ui.Resize',
@@ -25,7 +24,7 @@ define(
     'tinymce.themes.modern.ui.SkinLoaded',
     'tinymce.themes.modern.ui.Toolbar'
   ],
-  function (DOMUtils, Factory, Tools, Events, Settings, A11y, Branding, ContextToolbars, Menubar, Resize, Sidebar, SkinLoaded, Toolbar) {
+  function (DOMUtils, Factory, Tools, Events, Settings, A11y, ContextToolbars, Menubar, Resize, Sidebar, SkinLoaded, Toolbar) {
     var DOM = DOMUtils.DOM;
 
     var switchMode = function (panel) {
@@ -61,8 +60,10 @@ define(
     var render = function (editor, theme, args) {
       var panel, resizeHandleCtrl, startSize;
 
-      if (args.skinUiCss) {
+      if (Settings.isSkinDisabled(editor) === false && args.skinUiCss) {
         DOM.styleSheetLoader.load(args.skinUiCss, SkinLoaded.fireSkinLoaded(editor));
+      } else {
+        SkinLoaded.fireSkinLoaded(editor)();
       }
 
       panel = theme.panel = Factory.create({
@@ -73,8 +74,14 @@ define(
         layout: 'stack',
         border: 1,
         items: [
-          Settings.hasMenubar(editor) === false ? null : { type: 'menubar', border: '0 0 1 0', items: Menubar.createMenuButtons(editor) },
-          Toolbar.createToolbars(editor, Settings.getToolbarSize(editor)),
+          {
+            type: 'container',
+            classes: 'top-part',
+            items: [
+              Settings.hasMenubar(editor) === false ? null : { type: 'menubar', border: '0 0 1 0', items: Menubar.createMenuButtons(editor) },
+              Toolbar.createToolbars(editor, Settings.getToolbarSize(editor))
+            ]
+          },
           Sidebar.hasSidebar(editor) ? editAreaContainer(editor) : editArea('1 0 0 0')
         ]
       });
@@ -104,10 +111,13 @@ define(
       }
 
       if (Settings.hasStatusbar(editor)) {
+        var brandingLabel = Settings.isBrandingEnabled(editor) ? { type: 'label', classes: 'branding', html: ' powered by <a href="https://www.tinymce.com/?utm_campaign=editor_referral&utm_medium=poweredby&utm_source=tinymce" rel="noopener" target="_blank">tinymce</a>' } : null;
+
         panel.add({
           type: 'panel', name: 'statusbar', classes: 'statusbar', layout: 'flow', border: '1 0 0 0', ariaRoot: true, items: [
             { type: 'elementpath', editor: editor },
-            resizeHandleCtrl
+            resizeHandleCtrl,
+            brandingLabel
           ]
         });
       }
@@ -133,7 +143,6 @@ define(
       // Add accesibility shortcuts
       A11y.addKeys(editor, panel);
       ContextToolbars.addContextualToolbars(editor);
-      Branding.setup(editor);
 
       return {
         iframeContainer: panel.find('#iframe')[0].getEl(),
