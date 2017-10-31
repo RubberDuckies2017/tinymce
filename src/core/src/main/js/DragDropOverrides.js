@@ -223,10 +223,10 @@ define(
 
     var stop = function (state, editor) {
       return function () {
-        removeDragState(state);
         if (state.dragging) {
           editor.fire('dragend');
         }
+        removeDragState(state);
       };
     };
 
