@@ -145,7 +145,7 @@ define(
         return (
           '<div id="' + id + '" class="' + self.classes + '" tabindex="-1">' +
           '<button id="' + id + '-button" role="presentation" type="button" tabindex="-1">' +
-          (icon ? '<i class="' + icon + '"' + image + '></i>' : '') +
+          (icon ? '<span class="' + icon + '"' + image + '></span>' : '') +
           textHtml +
           '</button>' +
           '</div>'
@@ -182,11 +182,11 @@ define(
           self.settings.icon = icon;
           icon = icon ? prefix + 'ico ' + prefix + 'i-' + self.settings.icon : '';
 
-          var btnElm = self.getEl().firstChild, iconElm = btnElm.getElementsByTagName('i')[0];
+          var btnElm = self.getEl().firstChild, iconElm = btnElm.getElementsByTagName('span')[0];
 
           if (icon) {
             if (!iconElm || iconElm != btnElm.firstChild) {
-              iconElm = document.createElement('i');
+              iconElm = document.createElement('span');
               btnElm.insertBefore(iconElm, btnElm.firstChild);
             }
 
