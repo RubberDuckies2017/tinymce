@@ -438,5 +438,21 @@ asynctest(
       indent: false,
       skin_url: '/project/src/skins/lightgray/dist/lightgray'
     }, success, failure);
+
+    suite.test("dragstart/dragend override", function (editor) {
+      var result = {};
+      editor.on('dragstart', function (e) {
+        result[e.type] = true;
+      });
+      editor.on('dragend', function (e) {
+        result[e.type] = true;
+      });
+      editor.setContent('<p draggable="true" id="test-paragraph">test paragraph</p>');
+      var ptarget = editor.getDoc().getElementById('test-paragraph');
+      editor.dom.fire(ptarget, 'mousedown', { button: 0, screenX: 50, screenY: 50 });
+      editor.dom.fire(ptarget, 'mousemove', { button: 0, screenX: 0, screenY: 0 });
+      editor.dom.fire(editor.getBody(), 'mouseup');
+      LegacyUnit.deepEqual(result, { dragstart: true, dragend: true });
+    });
   }
 );
