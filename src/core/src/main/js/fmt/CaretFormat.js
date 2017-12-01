@@ -240,6 +240,7 @@ define(
           caretContainer = createCaretContainer(dom, true);
           textNode = caretContainer.firstChild;
 
+
           rng.insertNode(caretContainer);
           offset = 1;
 
@@ -273,6 +274,7 @@ define(
       while (node) {
         if (MatchFormat.matchNode(editor, node, name, vars, similar)) {
           formatNode = node;
+          //node.appendChild(dom.doc.createTextNode(formatNode));//Bug3817
           break;
         }
 
@@ -302,24 +304,32 @@ define(
 
         editor.formatter.remove(name, vars, rng);
         selection.moveToBookmark(bookmark);
-      } else {
-        caretContainer = getParentCaretContainer(editor.getBody(), formatNode);
-        var newCaretContainer = createCaretContainer(dom, false);
-        var caretNode = insertFormatNodesIntoCaretContainer(parents, newCaretContainer);
+      } else {//Bug3817
+        editor.formatter.remove(name, vars, formatNode);//Bug3817
+        var style = dom.getAttrib(formatNode, 'style');//Bug3817
 
-        if (caretContainer) {
-          insertCaretContainerNode(editor, newCaretContainer, caretContainer);
-        } else {
-          insertCaretContainerNode(editor, newCaretContainer, formatNode);
-        }
+        if (!(style.length)) {
+          editor.formatter.apply(name, vars, formatNode);//Bug3817
 
-        removeCaretContainerNode(dom, selection, caretContainer, false);
-        selection.setCursorLocation(caretNode, 1);
+          caretContainer = getParentCaretContainer(editor.getBody(), formatNode);
+          var newCaretContainer = createCaretContainer(dom, false);
+          var caretNode = insertFormatNodesIntoCaretContainer(parents, newCaretContainer);
 
-        if (dom.isEmpty(formatNode)) {
-          dom.remove(formatNode);
+          if (caretContainer) {
+            insertCaretContainerNode(editor, newCaretContainer, caretContainer);
+          } else {
+            insertCaretContainerNode(editor, newCaretContainer, formatNode);
+          }
+
+          removeCaretContainerNode(dom, selection, caretContainer, false);
+          selection.setCursorLocation(caretNode, 1);
+
+          if (dom.isEmpty(formatNode)) {
+            dom.remove(formatNode);
+          }
         }
       }
+
     };
 
     var disableCaretContainer = function (body, dom, selection, keyCode) {

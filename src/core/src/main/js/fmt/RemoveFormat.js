@@ -479,8 +479,8 @@ define(
           each(nodes, function (node) {
             process(node);
 
-            // Remove parent span if it only contains text-decoration: underline, yet a parent node is also underlined.
-            if (node.nodeType === 1 && ed.dom.getStyle(node, 'text-decoration') === 'underline' &&
+            // Remove parent span if it only contains text-decoration: underline, yet a parent node is also underlined.//Bug3817UnderLine
+            if (node.nodeType === 1 && ed.dom.getStyle(node, 'text-decoration') === 'underline' && ed.dom.getStyle(node, 'font-size') === '' &&
               node.parentNode && FormatUtils.getTextDecoration(dom, node.parentNode) === 'underline') {
               removeFormat(ed, {
                 'deep': false,
@@ -535,7 +535,9 @@ define(
 
         ed.nodeChanged();
       } else {
+//        selection.getNode().appendChild(dom.doc.createTextNode('RemoveFormat.js'));//Bug3817
         CaretFormat.removeCaretFormat(ed, name, vars, similar);
+
       }
     };
 
