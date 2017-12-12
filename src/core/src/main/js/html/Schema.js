@@ -695,7 +695,7 @@ define(
         }
 
         // Add default alt attribute for images, removed since alt="" is treated as presentational.
-        // elements.img.attributesDefault = [{name: 'alt', value: ''}];
+        elements.img.attributesDefault = [{ name: 'alt', value: '' }];
 
         // Remove these if they are empty by default
         each(split('ol ul sub sup blockquote span font a table tbody tr strong em b i'), function (name) {
